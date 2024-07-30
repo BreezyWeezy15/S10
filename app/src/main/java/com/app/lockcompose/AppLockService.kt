@@ -1,6 +1,5 @@
 package com.app.lockcompose
 
-import android.app.ActivityManager
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -14,14 +13,8 @@ import android.os.Build
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
-import android.provider.Settings
-import android.text.TextUtils
 import android.util.Log
-import android.widget.Toast
 import androidx.core.app.NotificationCompat
-import com.app.lockcompose.LockScreenActivity
-import com.app.lockcompose.MainActivity
-import com.app.lockcompose.R
 
 class AppLockService : Service() {
 
@@ -74,7 +67,10 @@ class AppLockService : Service() {
             val sortedStats = stats.sortedByDescending { it.lastTimeUsed }
             val currentApp = sortedStats.firstOrNull()?.packageName
             Log.d("AppLockService", "Current top app: $currentApp")
-            if (currentApp == "com.android.settings") {
+
+            // List of known apps or activities that should trigger the lock screen
+            val appsToLock = listOf("com.android.settings")
+            if (appsToLock.contains(currentApp)) {
                 showLockScreen()
             }
         } else {
@@ -83,10 +79,19 @@ class AppLockService : Service() {
     }
 
     private fun showLockScreen() {
-        val lockIntent = Intent(this, LockScreenActivity::class.java)
-        lockIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
-        startActivity(lockIntent)
-        Log.d("AppLockService", "Lock screen shown.")
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            // Use TYPE_APPLICATION_OVERLAY for newer versions
+            val lockIntent = Intent(this, LockScreenActivity::class.java)
+            lockIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            startActivity(lockIntent)
+            Log.d("AppLockService", "Lock screen shown.")
+        } else {
+            // Use TYPE_PHONE for older versions
+            val lockIntent = Intent(this, LockScreenActivity::class.java)
+            lockIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            startActivity(lockIntent)
+            Log.d("AppLockService", "Lock screen shown.")
+        }
     }
 
     private fun createNotificationChannel() {
@@ -110,9 +115,12 @@ class AppLockService : Service() {
             .setContentText("App lock service is running")
             .setSmallIcon(R.drawable.baseline_lock_24)
             .setContentIntent(pendingIntent)
+            .setOngoing(true) // Makes the notification ongoing
             .build()
     }
 }
+
+
 
 
 

@@ -32,9 +32,9 @@
             </intent-filter>
         </activity>
 
-        <service
-            android:name=".OverlayService"
-            android:permission="android.permission.SYSTEM_ALERT_WINDOW" />
+<!--        <service-->
+<!--            android:name=".OverlayService"-->
+<!--            android:permission="android.permission.SYSTEM_ALERT_WINDOW" />-->
         <service android:name=".AppLockService"
             android:foregroundServiceType="specialUse"/>
         <activity android:name=".LockScreenActivity"
@@ -46,6 +46,13 @@
             android:launchMode="singleInstance"
             android:taskAffinity=""
             android:screenOrientation="portrait"/>
+
+        <receiver android:name=".ForegroundAppReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.USER_PRESENT"/>
+            </intent-filter>
+        </receiver>
     </application>
 
 </manifest>
