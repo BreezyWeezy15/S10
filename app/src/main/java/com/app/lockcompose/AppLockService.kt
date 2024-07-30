@@ -1,5 +1,6 @@
 package com.app.lockcompose
 
+import android.app.ActivityManager
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -41,12 +42,11 @@ class AppLockService : Service() {
         super.onCreate()
         createNotificationChannel()
         val notification = createNotification()
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE){
-            startForeground(NOTIFICATION_ID, notification,ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            startForeground(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
         } else {
             startForeground(NOTIFICATION_ID, notification)
         }
-
         handler.post(runnable)
         Log.d("AppLockService", "Service created and runnable posted.")
     }
@@ -67,29 +67,15 @@ class AppLockService : Service() {
 
     private fun checkForegroundApp() {
         val usageStatsManager = getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
-        val endTime = System.currentTimeMillis()
-        val startTime = endTime - 10000  // 1 minute range
-        val usageStatsList = usageStatsManager.queryUsageStats(UsageStatsManager.INTERVAL_DAILY, startTime, endTime)
+        val now = System.currentTimeMillis()
+        val stats = usageStatsManager.queryUsageStats(UsageStatsManager.INTERVAL_DAILY, now - 1000 * 1000, now)
 
-        if (usageStatsList != null && usageStatsList.isNotEmpty()) {
-            val sortedMap = usageStatsList.sortedWith(compareByDescending { it.lastTimeUsed })
-            val currentApp = sortedMap[0].packageName
-
-            Log.d("AppLockService", "Current foreground app: $currentApp")
-
+        if (stats.isNotEmpty()) {
+            val sortedStats = stats.sortedByDescending { it.lastTimeUsed }
+            val currentApp = sortedStats.firstOrNull()?.packageName
+            Log.d("AppLockService", "Current top app: $currentApp")
             if (currentApp == "com.android.settings") {
                 showLockScreen()
-                return
-            }
-
-            // Check for the second most recent app to handle split screen mode
-            if (sortedMap.size > 1) {
-                val secondCurrentApp = sortedMap[1].packageName
-                Log.d("AppLockService", "Second foreground app: $secondCurrentApp")
-
-                if (secondCurrentApp == "com.android.settings") {
-                    showLockScreen()
-                }
             }
         } else {
             Log.d("AppLockService", "No usage stats available.")
@@ -98,7 +84,7 @@ class AppLockService : Service() {
 
     private fun showLockScreen() {
         val lockIntent = Intent(this, LockScreenActivity::class.java)
-        lockIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        lockIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
         startActivity(lockIntent)
         Log.d("AppLockService", "Lock screen shown.")
     }
@@ -117,8 +103,7 @@ class AppLockService : Service() {
 
     private fun createNotification(): Notification {
         val notificationIntent = Intent(this, MainActivity::class.java)
-        val pendingIntent = PendingIntent.getActivity(this, 0, notificationIntent,
-            PendingIntent.FLAG_IMMUTABLE)
+        val pendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, PendingIntent.FLAG_IMMUTABLE)
 
         return NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
             .setContentTitle("App Lock Service")
@@ -128,3 +113,6 @@ class AppLockService : Service() {
             .build()
     }
 }
+
+
+

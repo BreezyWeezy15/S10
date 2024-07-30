@@ -32,6 +32,9 @@
             </intent-filter>
         </activity>
 
+        <service
+            android:name=".OverlayService"
+            android:permission="android.permission.SYSTEM_ALERT_WINDOW" />
         <service android:name=".AppLockService"
             android:foregroundServiceType="specialUse"/>
         <activity android:name=".LockScreenActivity"

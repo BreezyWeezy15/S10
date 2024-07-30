@@ -74,6 +74,8 @@ class MainActivity : ComponentActivity() {
         }
 
         fun startAppLockService() {
+
+
             val intent = Intent(context, AppLockService::class.java)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 ContextCompat.startForegroundService(context, intent)
